@@ -1,0 +1,26 @@
+# Datasets
+data:
+  root: ./data/medmnist
+  image_size: 224
+  num_workers: 4
+  primary_dataset: pathmnist
+  in_dist_classes: [0, 2, 3, 4, 5]      # adipose, debris, lymphocytes, mucus, smooth muscle
+  near_ood_classes: [6, 7, 8]           # normal colon mucosa, cancer-associated stroma, adenocarcinoma
+  excluded_classes: [1]                 # background
+  far_ood: pneumoniamnist               # far-OOD
+
+
+# pretrained models to be checked by trans-rate
+models:
+  vit: vit_base_patch16_224
+  cnn: resnet50
+
+
+# hyperparameters
+training:
+  batch_size: 64
+  epochs: 20
+  lr: 1e-5
+  weight_decay: 1e-4
+  seed: 1410
+  device: cuda

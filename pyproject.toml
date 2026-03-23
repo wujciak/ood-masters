@@ -1,0 +1,34 @@
+[project]
+name = "ood-masters"
+version = "0.1.0"
+description = "OOD detection in medical imaging"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.6",
+    "torchvision",
+    "timm>=1.0",
+    "medmnist",
+    "numpy",
+    "scikit-learn",
+    "umap-learn",
+    "matplotlib",
+    "seaborn",
+    "tqdm",
+    "pyyaml",
+    "jupyter",
+    "ipykernel",
+    "black",
+]
+
+[tool.black]
+target-version = ["py312"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
