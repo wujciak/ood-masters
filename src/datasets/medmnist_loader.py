@@ -37,7 +37,9 @@ def get_transform(image_size: int = 224, augment: bool = False) -> transforms.Co
     )
 
 
-def load_split(name: str, split: str, root: str, image_size: int, augment: bool = False):
+def load_split(
+    name: str, split: str, root: str, image_size: int, augment: bool = False
+):
     info = INFO[name]
     DataClass = getattr(medmnist, info["python_class"])
     return DataClass(
@@ -57,7 +59,9 @@ def filter_by_classes(dataset, classes: list[int]) -> Subset:
     return Subset(dataset, indices)
 
 
-def _make_loader(dataset, batch_size: int, shuffle: bool, num_workers: int) -> DataLoader:
+def _make_loader(
+    dataset, batch_size: int, shuffle: bool, num_workers: int
+) -> DataLoader:
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -77,41 +81,52 @@ def get_loaders(
     num_workers: int = 4,
 ) -> SplitLoaders:
     id_train = _make_loader(
-        filter_by_classes(load_split(name, "train", root, image_size, augment=True), id_classes),
-        batch_size, shuffle=True, num_workers=num_workers,
+        filter_by_classes(
+            load_split(name, "train", root, image_size, augment=True), id_classes
+        ),
+        batch_size,
+        shuffle=True,
+        num_workers=num_workers,
     )
     id_val = _make_loader(
         filter_by_classes(load_split(name, "val", root, image_size), id_classes),
-        batch_size, shuffle=False, num_workers=num_workers,
+        batch_size,
+        shuffle=False,
+        num_workers=num_workers,
     )
 
     test_raw = load_split(name, "test", root, image_size)
     id_test = _make_loader(
         filter_by_classes(test_raw, id_classes),
-        batch_size, shuffle=False, num_workers=num_workers,
+        batch_size,
+        shuffle=False,
+        num_workers=num_workers,
     )
     near_ood = _make_loader(
         filter_by_classes(test_raw, near_ood_classes),
-        batch_size, shuffle=False, num_workers=num_workers,
+        batch_size,
+        shuffle=False,
+        num_workers=num_workers,
     )
 
-    return SplitLoaders(id_train=id_train, id_val=id_val, id_test=id_test, near_ood=near_ood)
+    return SplitLoaders(
+        id_train=id_train, id_val=id_val, id_test=id_test, near_ood=near_ood
+    )
 
 
-def get_far_ood_loaders(
-    ood_datasets: list[str],
+def get_far_ood_loader(
+    dataset: str,
     batch_size: int = 64,
     root: str = "./data/medmnist",
     image_size: int = 224,
     num_workers: int = 4,
-) -> dict[str, DataLoader]:
-    return {
-        name: _make_loader(
-            load_split(name, "test", root, image_size),
-            batch_size, shuffle=False, num_workers=num_workers,
-        )
-        for name in ood_datasets
-    }
+) -> DataLoader:
+    return _make_loader(
+        load_split(dataset, "test", root, image_size),
+        batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+    )
 
 
 def dataset_info(name: str) -> dict:

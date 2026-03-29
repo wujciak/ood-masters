@@ -1,2 +1,15 @@
+# environment files
 .venv
 .env
+
+# python binary and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# cached embeddings, results, and data
+data/embeddings/
+data/results.csv
+data/medmnist/
+data/plots/
