@@ -13,6 +13,7 @@ from src.ood.dbscan_detector import DbscanDetector
 from src.ood.kmeans_detector import KMeansDetector
 from src.ood.umap_projector import UmapProjector
 from src.training.feature_pipeline import extract_all, load_embeddings, save_embeddings
+from src.visualization.tsne_plot import plot_tsne
 from src.visualization.umap_plot import plot_umap
 
 
@@ -110,10 +111,17 @@ def main() -> None:
         results.insert(0, "architecture", arch_name)
         all_results.append(results)
 
+        vis_splits = ["id_train", "id_test", "near_ood", "far_ood"]
         plot_umap(
-            {k: v for k, v in projections.items() if k != "id_val"},
-            title=f"UMAP --- {arch_name.upper()}",
+            {k: v for k, v in projections.items() if k in vis_splits},
+            title=f"UMAP - {arch_name.upper()}",
             save_path=plots_dir / f"umap_{arch_name}.png",
+        )
+        plot_tsne(
+            embeddings,
+            splits=vis_splits,
+            title=f"t-SNE - {arch_name.upper()}",
+            save_path=plots_dir / f"tsne_{arch_name}.png",
         )
 
     final = pd.concat(all_results, ignore_index=True)

@@ -9,7 +9,5 @@ __pycache__/
 *.pyd
 
 # cached embeddings, results, and data
-data/embeddings/
-data/results.csv
-data/medmnist/
-data/plots/
+data/*
+!data/.gitkeep
