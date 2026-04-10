@@ -1,5 +1,5 @@
 import torch
-from .base_extractor import BaseExtractor
+from .base import BaseExtractor
 
 
 class CnnExtractor(BaseExtractor):

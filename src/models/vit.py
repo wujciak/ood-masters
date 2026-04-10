@@ -1,13 +1,14 @@
 import torch
 from typing import Literal
-from .base_extractor import BaseExtractor
+from .base import BaseExtractor
 
 
 class VitExtractor(BaseExtractor):
     """ViT feature extractor.
 
-    pool="cls"  --- returns the CLS token (index 0), standard for classification/OOD.
-    pool="mean" --- mean over patch tokens only (excludes CLS).
+    pool="cls"  returns the CLS token.
+
+    pool="mean" mean over patch tokens only (excludes CLS).
     """
 
     def __init__(

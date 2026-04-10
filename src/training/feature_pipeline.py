@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.models.base_extractor import BaseExtractor
+from src.models.base import BaseExtractor
 
 
 def extract_features(

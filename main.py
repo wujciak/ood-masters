@@ -6,12 +6,13 @@ import torch
 import yaml
 
 from src.datasets.medmnist_loader import get_far_ood_loader, get_loaders
-from src.evaluation.runner import run_all
-from src.models.cnn_extractor import CnnExtractor
-from src.models.vit_extractor import VitExtractor
-from src.ood.dbscan_detector import DbscanDetector
-from src.ood.kmeans_detector import KMeansDetector
-from src.ood.umap_projector import UmapProjector
+from src.evaluation.kfold_runner import aggregate_folds, run_kfold
+from src.models.cnn import CnnExtractor
+from src.models.vit import VitExtractor
+from src.ood.dod import DODDetector
+from src.reductors.pca import PCAReductor
+from src.reductors.random_subspace import RandomSubspaceReductor
+from src.reductors.umap import UmapReductor
 from src.training.feature_pipeline import extract_all, load_embeddings, save_embeddings
 from src.visualization.tsne_plot import plot_tsne
 from src.visualization.umap_plot import plot_umap
@@ -49,9 +50,41 @@ def get_or_extract(
     return embeddings
 
 
+def build_reductors(cfg: dict, seed: int) -> dict:
+    rc = cfg["reductors"]
+    return {
+        "raw": None,
+        "pca": PCAReductor(n_components=rc["pca"]["n_components"]),
+        "random_subspace": RandomSubspaceReductor(
+            n_components=rc["random_subspace"]["n_components"], random_state=seed
+        ),
+        "umap": UmapReductor(
+            n_neighbors=rc["umap"]["n_neighbors"],
+            min_dist=rc["umap"]["min_dist"],
+            n_components=rc["umap"]["n_components"],
+            random_state=seed,
+        ),
+    }
+
+
+def build_detectors(cfg: dict, seed: int) -> dict:
+    dc = cfg["dod"]
+    return {
+        m["name"]: DODDetector(
+            n_clusters=dc["n_clusters"],
+            metric=m["metric"],
+            p=m["p"],
+            threshold_percentile=dc["threshold_percentile"],
+            random_state=seed,
+        )
+        for m in dc["metrics"]
+    }
+
+
 def main() -> None:
     cfg = load_config()
-    torch.manual_seed(cfg["training"]["seed"])
+    seed = cfg["training"]["seed"]
+    torch.manual_seed(seed)
 
     device = cfg["training"]["device"]
     cache_dir = Path("data/embeddings")
@@ -91,35 +124,37 @@ def main() -> None:
             arch_name, extractor, split_loaders, far_ood_loader, device, cache_dir
         )
 
-        projector = UmapProjector(
-            n_neighbors=cfg["umap"]["n_neighbors"],
-            min_dist=cfg["umap"]["min_dist"],
-            random_state=cfg["training"]["seed"],
-        )
-        detectors = {
-            "kmeans": KMeansDetector(
-                n_clusters=cfg["ood"]["kmeans_clusters"],
-                random_state=cfg["training"]["seed"],
-            ),
-            "dbscan": DbscanDetector(
-                eps=cfg["ood"]["dbscan_eps"],
-                min_samples=cfg["ood"]["dbscan_min_samples"],
-            ),
-        }
+        projectors = build_reductors(cfg, seed)
+        detectors = build_detectors(cfg, seed)
 
-        results, projections = run_all(embeddings, projector, detectors)
+        print("Running k-fold evaluation...")
+        fold_results = run_kfold(
+            embeddings,
+            projectors,
+            detectors,
+            n_splits=cfg["kfold"]["n_splits"],
+            random_state=seed,
+        )
+        results = aggregate_folds(fold_results)
         results.insert(0, "architecture", arch_name)
         all_results.append(results)
 
-        vis_splits = ["id_train", "id_test", "near_ood", "far_ood"]
+        # UMAP visualization on full id_train set not only fold
+        umap_proj = projectors["umap"]
+        umap_proj.fit(embeddings["id_train"][0])
+        umap_projections = {
+            name: umap_proj.transform(feats)
+            for name, (feats, _) in embeddings.items()
+            if name != "id_val"
+        }
         plot_umap(
-            {k: v for k, v in projections.items() if k in vis_splits},
+            umap_projections,
             title=f"UMAP - {arch_name.upper()}",
             save_path=plots_dir / f"umap_{arch_name}.png",
         )
         plot_tsne(
             embeddings,
-            splits=vis_splits,
+            splits=["id_train", "id_test", "near_ood", "far_ood"],
             title=f"t-SNE - {arch_name.upper()}",
             save_path=plots_dir / f"tsne_{arch_name}.png",
         )

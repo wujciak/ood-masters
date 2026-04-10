@@ -1,1 +1,1 @@
-"Training directory"
+"""Training directory."""

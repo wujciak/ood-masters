@@ -19,21 +19,33 @@ models:
 # Training and extraction
 training:
   batch_size: 64
-  epochs: 20
-  lr: 1e-5
-  weight_decay: 1e-4
   seed: 1410
   device: cuda
 
 
-# UMAP projection
-umap:
-  n_neighbors: 15
-  min_dist: 0.1
+# DOD detector
+dod:
+  n_clusters: 10
+  threshold_percentile: 95.0
+  metrics:
+    - {name: minkowski_l1, metric: minkowski, p: 1}
+    - {name: minkowski_l2, metric: minkowski, p: 2}
+    - {name: minkowski_inf, metric: minkowski, p: .inf}
+    - {name: mahalanobis, metric: mahalanobis, p: 2}
 
 
-# OOD detectors
-ood:
-  kmeans_clusters: 10
-  dbscan_eps: 0.5
-  dbscan_min_samples: 5
+# Dimensionality reduction
+reductors:
+  umap:
+    n_neighbors: 15
+    min_dist: 0.1
+    n_components: 2
+  pca:
+    n_components: 64
+  random_subspace:
+    n_components: 64
+
+
+# K-fold evaluation
+kfold:
+  n_splits: 5

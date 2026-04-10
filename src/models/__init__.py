@@ -1,1 +1,1 @@
-"Model architectures directory"
+"""Model architectures directory"""

@@ -1,1 +1,1 @@
-"Evaluation metrics and experiment runner"
+"""Evaluation metrics and k-fold runner"""

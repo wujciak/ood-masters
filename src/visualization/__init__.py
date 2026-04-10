@@ -1,1 +1,1 @@
-"Visualization utilities"
+"""Visualization utilities directory."""

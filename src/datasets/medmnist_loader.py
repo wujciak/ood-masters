@@ -127,14 +127,3 @@ def get_far_ood_loader(
         shuffle=False,
         num_workers=num_workers,
     )
-
-
-def dataset_info(name: str) -> dict:
-    info = INFO[name]
-    return {
-        "name": name,
-        "task": info["task"],
-        "n_channels": info["n_channels"],
-        "n_classes": len(info["label"]),
-        "labels": info["label"],
-    }
