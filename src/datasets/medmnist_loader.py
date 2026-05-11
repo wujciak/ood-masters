@@ -12,39 +12,26 @@ IMAGENET_STD = (0.229, 0.224, 0.225)
 @dataclass
 class SplitLoaders:
     id_train: DataLoader
-    id_val: DataLoader
     id_test: DataLoader
     near_ood: DataLoader
 
 
-def get_transform(image_size: int = 224, augment: bool = False) -> transforms.Compose:
-    base = [
-        transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-    ]
-    if not augment:
-        return transforms.Compose(base)
+def get_transform(image_size: int = 224) -> transforms.Compose:
     return transforms.Compose(
         [
-            transforms.Resize((image_size + 32, image_size + 32)),
-            transforms.RandomCrop(image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
         ]
     )
 
 
-def load_split(
-    name: str, split: str, root: str, image_size: int, augment: bool = False
-):
+def load_split(name: str, split: str, root: str, image_size: int):
     info = INFO[name]
     DataClass = getattr(medmnist, info["python_class"])
     return DataClass(
         split=split,
-        transform=get_transform(image_size, augment),
+        transform=get_transform(image_size),
         download=True,
         root=root,
         size=image_size,
@@ -81,17 +68,9 @@ def get_loaders(
     num_workers: int = 4,
 ) -> SplitLoaders:
     id_train = _make_loader(
-        filter_by_classes(
-            load_split(name, "train", root, image_size, augment=True), id_classes
-        ),
+        filter_by_classes(load_split(name, "train", root, image_size), id_classes),
         batch_size,
         shuffle=True,
-        num_workers=num_workers,
-    )
-    id_val = _make_loader(
-        filter_by_classes(load_split(name, "val", root, image_size), id_classes),
-        batch_size,
-        shuffle=False,
         num_workers=num_workers,
     )
 
@@ -109,9 +88,7 @@ def get_loaders(
         num_workers=num_workers,
     )
 
-    return SplitLoaders(
-        id_train=id_train, id_val=id_val, id_test=id_test, near_ood=near_ood
-    )
+    return SplitLoaders(id_train=id_train, id_test=id_test, near_ood=near_ood)
 
 
 def get_far_ood_loader(

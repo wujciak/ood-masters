@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 import yaml
@@ -11,11 +12,10 @@ from src.models.cnn import CnnExtractor
 from src.models.vit import VitExtractor
 from src.ood.dod import DODDetector
 from src.reductors.pca import PCAReductor
-from src.reductors.random_subspace import RandomSubspaceReductor
 from src.reductors.umap import UmapReductor
+from src.reductors.random_subspace import RandomSubspaceReductor
 from src.training.feature_pipeline import extract_all, load_embeddings, save_embeddings
 from src.visualization.tsne_plot import plot_tsne
-from src.visualization.umap_plot import plot_umap
 
 
 def load_config(path: str = "configs/config.yaml") -> dict:
@@ -39,7 +39,6 @@ def get_or_extract(
     print(f"[{arch_name}] Extracting features...")
     loaders = {
         "id_train": split_loaders.id_train,
-        "id_val": split_loaders.id_val,
         "id_test": split_loaders.id_test,
         "near_ood": split_loaders.near_ood,
         "far_ood": far_ood_loader,
@@ -88,7 +87,7 @@ def main() -> None:
 
     device = cfg["training"]["device"]
     cache_dir = Path("data/embeddings")
-    plots_dir = Path("data/plots")
+    plots_dir = Path("data/plots/embeddings")
 
     data_cfg = cfg["data"]
     split_loaders = get_loaders(
@@ -114,6 +113,7 @@ def main() -> None:
     }
 
     all_results: list[pd.DataFrame] = []
+    all_fold_results: list[pd.DataFrame] = []
 
     for arch_name, extractor in architectures.items():
         print(f"\n{'='*50}")
@@ -135,23 +135,12 @@ def main() -> None:
             n_splits=cfg["kfold"]["n_splits"],
             random_state=seed,
         )
+        fold_results.insert(0, "architecture", arch_name)
+        all_fold_results.append(fold_results)
         results = aggregate_folds(fold_results)
         results.insert(0, "architecture", arch_name)
         all_results.append(results)
 
-        # UMAP visualization on full id_train set not only fold
-        umap_proj = projectors["umap"]
-        umap_proj.fit(embeddings["id_train"][0])
-        umap_projections = {
-            name: umap_proj.transform(feats)
-            for name, (feats, _) in embeddings.items()
-            if name != "id_val"
-        }
-        plot_umap(
-            umap_projections,
-            title=f"UMAP - {arch_name.upper()}",
-            save_path=plots_dir / f"umap_{arch_name}.png",
-        )
         plot_tsne(
             embeddings,
             splits=["id_train", "id_test", "near_ood", "far_ood"],
@@ -160,6 +149,7 @@ def main() -> None:
         )
 
     final = pd.concat(all_results, ignore_index=True)
+    all_fold_results = pd.concat(all_fold_results, ignore_index=True)
     print("\n" + "=" * 70)
     print(final.to_string(index=False))
     print("=" * 70)
@@ -168,7 +158,18 @@ def main() -> None:
     results_path = Path(f"data/results_{timestamp}.csv")
     results_path.parent.mkdir(parents=True, exist_ok=True)
     final.to_csv(results_path, index=False)
-    print(f"\nResults saved to {results_path}")
+    print(f"Results saved to {results_path}")
+
+    npz_data = {}
+    for _, row in all_fold_results.iterrows():
+        key = f"{row['architecture']}__{row['space']}__{row['detector']}__{row['scenario']}"
+        for metric in ("auroc", "fpr95"):
+            npz_data.setdefault(f"{key}__{metric}", []).append(row[metric])
+    np.savez(
+        results_path.with_suffix(".npz"),
+        **{k: np.array(v) for k, v in npz_data.items()},
+    )
+    print(f"Fold arrays saved to {results_path.with_suffix('.npz')}")
 
 
 if __name__ == "__main__":

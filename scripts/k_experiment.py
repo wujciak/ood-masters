@@ -1,3 +1,5 @@
+"""Paerameter of k (components) sweep for PCA and Random Subspace reductors with Mahalanobis-DOD."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -101,7 +103,7 @@ def plot_results(results: dict, save_path: Path) -> None:
                 )
 
             ax.set_title(
-                f"{arch.upper()} — {scenario.replace('_', '-').upper()}", fontsize=10
+                f"{arch.upper()}, {scenario.replace('_', '-').upper()}", fontsize=10
             )
             ax.set_ylim(0, 1)
             ax.set_xscale("log", base=2)
@@ -142,14 +144,14 @@ def main() -> None:
             print(f"  {name}...")
             results[arch][name] = run_k_sweep(embeddings, cls, K_VALUES)
 
-    plot_results(results, Path("data/plots/k_experiment.png"))
+    plot_results(results, Path("data/plots/results/k_experiment.png"))
 
     frames = []
     for arch, arch_res in results.items():
         for name, df in arch_res.items():
             frames.append(df.assign(architecture=arch, reductor=name))
     pd.concat(frames, ignore_index=True).to_csv(
-        "data/k_experiment_results.csv", index=False
+        "data/results/k_experiment.csv", index=False
     )
     print("Results saved to data/k_experiment_results.csv")
 
