@@ -22,21 +22,19 @@ def main() -> None:
 
     path_train = load_split("pathmnist", "train", root, image_size=28)
     path_test = load_split("pathmnist", "test", root, image_size=28)
-    pneumonia_test = load_split("pneumoniamnist", "test", root, image_size=28)
+    pneumonia = load_split("pneumoniamnist", "test", root, image_size=28)
 
     counts = {
-        "ID train": len(filter_by_classes(path_train, ID_CLASSES)),
-        "ID test": len(filter_by_classes(path_test, ID_CLASSES)),
+        "ID": len(filter_by_classes(path_train, ID_CLASSES)),
         "Near-OOD": len(filter_by_classes(path_test, NEAR_OOD_CLASSES)),
-        "Far-OOD": len(pneumonia_test),
+        "Far-OOD": len(pneumonia),
     }
-    colors = ["#4878CF", "#4878CF", "#D65F5F", "#FF7F0E"]
+    colors = ["#4878CF", "#D65F5F", "#FF7F0E"]
 
     fig, ax = plt.subplots(figsize=(6, 4))
     bars = ax.bar(counts.keys(), counts.values(), color=colors, alpha=0.85)
     ax.bar_label(bars, padding=3, fontsize=9)
     ax.set_ylabel("Samples")
-    ax.set_title("Sample counts per experiment split")
     ax.set_ylim(0, max(counts.values()) * 1.15)
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()

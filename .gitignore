@@ -8,6 +8,11 @@ __pycache__/
 *.pyo
 *.pyd
 
-# cached embeddings, results, and data
-data/*
-!data/.gitkeep
+# large binary data
+data/medmnist/
+data/embeddings/
+data/results/*.npz
+
+# allow light outputs like plots and results
+!data/results/
+!data/plots/

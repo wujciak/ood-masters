@@ -1,12 +1,9 @@
-"""Generate LaTeX tables and bar charts from k-fold results CSV."""
-
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-RESULTS_CSV = sorted(Path("data").glob("results_*.csv"))[-1]
 OUT_DIR = Path("data/plots/results")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -16,68 +13,62 @@ SPACE_LABELS = {
     "random_subspace": "Rand. Subspace",
     "umap": "UMAP",
 }
-METRIC_LABELS = {
+DETECTOR_LABELS = {
     "mahalanobis": "Mahalanobis",
-    "minkowski_l1": r"$\ell_1$",
-    "minkowski_l2": r"$\ell_2$",
-    "minkowski_inf": r"$\ell_\infty$",
+    "minkowski_l1": "Manhattan",
+    "minkowski_l2": "Euclidean",
+    "minkowski_inf": "Chebyshev",
 }
 SPACE_ORDER = ["raw", "pca", "random_subspace", "umap"]
-METRIC_ORDER = ["mahalanobis", "minkowski_l1", "minkowski_l2", "minkowski_inf"]
+DETECTOR_ORDER = ["mahalanobis", "minkowski_l1", "minkowski_l2", "minkowski_inf"]
+METRICS = ["auroc", "aupr", "bal_acc"]
+METRIC_LABELS = {"auroc": "AUROC", "aupr": "AUPR", "bal_acc": "Bal. Acc."}
 
 
 def fmt(mean: float, std: float) -> str:
     return f"{mean:.3f} $\\pm$ {std:.3f}"
 
 
-def make_table(df: pd.DataFrame, scenario: str) -> str:
+def bold(s: str) -> str:
+    return r"\textbf{" + s + "}"
+
+
+def make_table(df: pd.DataFrame, scenario: str, metric: str) -> str:
     sub = df[df["scenario"] == scenario].copy()
+    col = metric
+    col_std = f"{metric}_std"
 
     lines = []
-    lines.append(r"\begin{tabular}{llcccc}")
+    lines.append(r"\begin{tabular}{llcc}")
     lines.append(r"\toprule")
-    lines.append(r"& & \multicolumn{2}{c}{ViT} & \multicolumn{2}{c}{CNN} \\")
-    lines.append(r"\cmidrule(lr){3-4} \cmidrule(lr){5-6}")
-    lines.append(r"Space & Distance & AUROC & FPR95 & AUROC & FPR95 \\")
+    lines.append(f"Space & Distance & ViT & CNN \\\\")
     lines.append(r"\midrule")
-
-    # find column-wise best AUROC for bolding
-    best_vit = sub[sub["architecture"] == "vit"]["auroc"].max()
-    best_cnn = sub[sub["architecture"] == "cnn"]["auroc"].max()
 
     for space in SPACE_ORDER:
         space_rows = sub[sub["space"] == space]
         first = True
-        for metric in METRIC_ORDER:
-            row_vit = space_rows[
-                (space_rows["architecture"] == "vit")
-                & (space_rows["detector"] == metric)
+        for det in DETECTOR_ORDER:
+            v = space_rows[
+                (space_rows["architecture"] == "vit") & (space_rows["detector"] == det)
             ]
-            row_cnn = space_rows[
-                (space_rows["architecture"] == "cnn")
-                & (space_rows["detector"] == metric)
+            c = space_rows[
+                (space_rows["architecture"] == "cnn") & (space_rows["detector"] == det)
             ]
-            if row_vit.empty or row_cnn.empty:
+            if v.empty or c.empty:
                 continue
+            v, c = v.iloc[0], c.iloc[0]
 
-            v = row_vit.iloc[0]
-            c = row_cnn.iloc[0]
-
-            vit_auroc = fmt(v["auroc"], v["auroc_std"])
-            vit_fpr = fmt(v["fpr95"], v["fpr95_std"])
-            cnn_auroc = fmt(c["auroc"], c["auroc_std"])
-            cnn_fpr = fmt(c["fpr95"], c["fpr95_std"])
-
-            if v["auroc"] >= best_vit - 1e-4:
-                vit_auroc = r"\textbf{" + vit_auroc + "}"
-            if c["auroc"] >= best_cnn - 1e-4:
-                cnn_auroc = r"\textbf{" + cnn_auroc + "}"
+            vit_val = fmt(v[col], v[col_std])
+            cnn_val = fmt(c[col], c[col_std])
+            if v[col] > c[col]:
+                vit_val = bold(vit_val)
+            elif c[col] > v[col]:
+                cnn_val = bold(cnn_val)
 
             space_label = SPACE_LABELS[space] if first else ""
             first = False
-            metric_label = METRIC_LABELS[metric]
             lines.append(
-                f"{space_label} & {metric_label} & {vit_auroc} & {vit_fpr} & {cnn_auroc} & {cnn_fpr} \\\\"
+                f"{space_label} & {DETECTOR_LABELS[det]} & {vit_val} & {cnn_val} \\\\"
             )
 
         lines.append(r"\midrule" if space != SPACE_ORDER[-1] else "")
@@ -87,24 +78,25 @@ def make_table(df: pd.DataFrame, scenario: str) -> str:
     return "\n".join(lines)
 
 
-def make_bar_chart(df: pd.DataFrame, scenario: str, save_path: Path) -> None:
+def make_bar_chart(
+    df: pd.DataFrame, scenario: str, metric: str, save_path: Path
+) -> None:
     sub = df[(df["scenario"] == scenario) & (df["detector"] == "mahalanobis")].copy()
-
-    spaces = SPACE_ORDER
-    x = np.arange(len(spaces))
+    x = np.arange(len(SPACE_ORDER))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(8, 4))
-
+    fig, ax = plt.subplots(figsize=(7, 4))
     for i, arch in enumerate(["vit", "cnn"]):
         arch_sub = sub[sub["architecture"] == arch].set_index("space")
-        means = [arch_sub.loc[s, "auroc"] if s in arch_sub.index else 0 for s in spaces]
-        stds = [
-            arch_sub.loc[s, "auroc_std"] if s in arch_sub.index else 0 for s in spaces
+        means = [
+            arch_sub.loc[s, metric] if s in arch_sub.index else 0 for s in SPACE_ORDER
         ]
-        offset = (i - 0.5) * width
+        stds = [
+            arch_sub.loc[s, f"{metric}_std"] if s in arch_sub.index else 0
+            for s in SPACE_ORDER
+        ]
         ax.bar(
-            x + offset,
+            x + (i - 0.5) * width,
             means,
             width,
             yerr=stds,
@@ -115,10 +107,12 @@ def make_bar_chart(df: pd.DataFrame, scenario: str, save_path: Path) -> None:
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels([SPACE_LABELS[s] for s in spaces])
+    ax.set_xticklabels([SPACE_LABELS[s] for s in SPACE_ORDER])
     ax.set_ylim(0, 1.05)
-    ax.set_ylabel("AUROC")
-    ax.set_title(f"Mahalanobis-DOD, {scenario.replace('_', '-').upper()}")
+    ax.set_ylabel(METRIC_LABELS[metric])
+    ax.set_title(
+        f"Mahalanobis-DOD, {scenario.replace('_', '-').upper()}, {METRIC_LABELS[metric]}"
+    )
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()
@@ -128,18 +122,22 @@ def make_bar_chart(df: pd.DataFrame, scenario: str, save_path: Path) -> None:
 
 
 def main() -> None:
-    df = pd.read_csv(RESULTS_CSV)
+    csv_files = sorted(Path("data/results").glob("eval_*.csv"))
+    if not csv_files:
+        raise FileNotFoundError(
+            "No results found in data/results/. Run experiments/eval.py first."
+        )
+    df = pd.read_csv(csv_files[-1])
 
     for scenario in ["far_ood", "near_ood"]:
-        label = scenario.replace("_", "-")
-        table = make_table(df, scenario)
-        path = OUT_DIR / f"table_{scenario}.tex"
-        path.write_text(table)
-        print(f"Saved {path}")
-        print(f"\n--- {label} ---")
-        print(table)
-
-        make_bar_chart(df, scenario, OUT_DIR / f"bar_{scenario}.png")
+        for metric in METRICS:
+            table = make_table(df, scenario, metric)
+            path = OUT_DIR / f"table_{scenario}_{metric}.tex"
+            path.write_text(table)
+            print(f"Saved {path}")
+            make_bar_chart(
+                df, scenario, metric, OUT_DIR / f"bar_{scenario}_{metric}.png"
+            )
 
 
 if __name__ == "__main__":

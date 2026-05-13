@@ -39,16 +39,20 @@ def run_kfold(
             for det_name, detector in detectors.items():
                 detector.fit(train_proj)
                 id_scores = detector.score(val_proj)
+                id_preds = detector.predict(val_proj)
 
                 for scenario, ood_feats in ood_proj.items():
                     ood_scores = detector.score(ood_feats)
+                    ood_preds = detector.predict(ood_feats)
                     rows.append(
                         {
                             "fold": fold,
                             "space": proj_name,
                             "detector": det_name,
                             "scenario": scenario,
-                            **compute_metrics(id_scores, ood_scores),
+                            **compute_metrics(
+                                id_scores, ood_scores, id_preds, ood_preds
+                            ),
                         }
                     )
 
@@ -57,7 +61,7 @@ def run_kfold(
 
 def aggregate_folds(df: pd.DataFrame) -> pd.DataFrame:
     group_cols = ["space", "detector", "scenario"]
-    metric_cols = ["auroc", "fpr95"]
+    metric_cols = ["auroc", "aupr", "bal_acc"]
     mean = df.groupby(group_cols)[metric_cols].mean()
     std = df.groupby(group_cols)[metric_cols].std()
     std.columns = [f"{c}_std" for c in std.columns]
