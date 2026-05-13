@@ -1,0 +1,26 @@
+\begin{tabular}{llcc}
+\toprule
+Space & Distance & ViT & CNN \\
+\midrule
+Raw & Mahalanobis & 0.765 $\pm$ 0.004 & \textbf{0.801 $\pm$ 0.004} \\
+ & Manhattan & 0.668 $\pm$ 0.004 & \textbf{0.804 $\pm$ 0.006} \\
+ & Euclidean & 0.657 $\pm$ 0.005 & \textbf{0.799 $\pm$ 0.006} \\
+ & Chebyshev & 0.517 $\pm$ 0.007 & \textbf{0.668 $\pm$ 0.006} \\
+\midrule
+PCA & Mahalanobis & 0.679 $\pm$ 0.003 & \textbf{0.728 $\pm$ 0.007} \\
+ & Manhattan & 0.661 $\pm$ 0.002 & \textbf{0.695 $\pm$ 0.005} \\
+ & Euclidean & 0.638 $\pm$ 0.003 & \textbf{0.651 $\pm$ 0.009} \\
+ & Chebyshev & 0.551 $\pm$ 0.008 & \textbf{0.578 $\pm$ 0.031} \\
+\midrule
+Rand. Subspace & Mahalanobis & 0.708 $\pm$ 0.003 & \textbf{0.785 $\pm$ 0.003} \\
+ & Manhattan & 0.651 $\pm$ 0.006 & \textbf{0.780 $\pm$ 0.002} \\
+ & Euclidean & 0.646 $\pm$ 0.007 & \textbf{0.742 $\pm$ 0.004} \\
+ & Chebyshev & 0.581 $\pm$ 0.010 & \textbf{0.680 $\pm$ 0.008} \\
+\midrule
+UMAP & Mahalanobis & \textbf{0.564 $\pm$ 0.019} & 0.525 $\pm$ 0.056 \\
+ & Manhattan & \textbf{0.567 $\pm$ 0.019} & 0.529 $\pm$ 0.053 \\
+ & Euclidean & \textbf{0.566 $\pm$ 0.018} & 0.527 $\pm$ 0.057 \\
+ & Chebyshev & \textbf{0.561 $\pm$ 0.019} & 0.526 $\pm$ 0.065 \\
+
+\bottomrule
+\end{tabular}
