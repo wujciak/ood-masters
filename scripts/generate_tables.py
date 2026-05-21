@@ -4,11 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-OUT_DIR = Path("data/plots/results")
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+TABLES_DIR = Path("data/results/tables")
+PLOTS_DIR = Path("data/plots")
+TABLES_DIR.mkdir(parents=True, exist_ok=True)
+PLOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 SPACE_LABELS = {
     "raw": "Raw",
+    "raw_l2": "Raw L2",
     "pca": "PCA",
     "random_subspace": "Rand. Subspace",
     "umap": "UMAP",
@@ -19,7 +22,7 @@ DETECTOR_LABELS = {
     "minkowski_l2": "Euclidean",
     "minkowski_inf": "Chebyshev",
 }
-SPACE_ORDER = ["raw", "pca", "random_subspace", "umap"]
+SPACE_ORDER = ["raw", "raw_l2", "pca", "random_subspace", "umap"]
 DETECTOR_ORDER = ["mahalanobis", "minkowski_l1", "minkowski_l2", "minkowski_inf"]
 METRICS = ["auroc", "aupr", "bal_acc"]
 METRIC_LABELS = {"auroc": "AUROC", "aupr": "AUPR", "bal_acc": "Bal. Acc."}
@@ -122,21 +125,21 @@ def make_bar_chart(
 
 
 def main() -> None:
-    csv_files = sorted(Path("data/results").glob("eval_*.csv"))
+    csv_files = sorted(Path("data/results/csv").glob("eval_*.csv"))
     if not csv_files:
         raise FileNotFoundError(
-            "No results found in data/results/. Run experiments/eval.py first."
+            "No results found in data/results/csv/. Run experiments/eval.py first."
         )
     df = pd.read_csv(csv_files[-1])
 
     for scenario in ["far_ood", "near_ood"]:
         for metric in METRICS:
             table = make_table(df, scenario, metric)
-            path = OUT_DIR / f"table_{scenario}_{metric}.tex"
+            path = TABLES_DIR / f"table_{scenario}_{metric}.tex"
             path.write_text(table)
             print(f"Saved {path}")
             make_bar_chart(
-                df, scenario, metric, OUT_DIR / f"bar_{scenario}_{metric}.png"
+                df, scenario, metric, PLOTS_DIR / f"bar_{scenario}_{metric}.png"
             )
 
 

@@ -18,7 +18,7 @@ def main() -> None:
 
     device = cfg["training"]["device"]
     cache_dir = Path("data/embeddings")
-    plots_dir = Path("data/plots/embeddings")
+    plots_dir = Path("data/plots")
 
     data_cfg = cfg["data"]
     split_loaders = get_loaders(

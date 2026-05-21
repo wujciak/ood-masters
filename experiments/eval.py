@@ -9,13 +9,15 @@ import pandas as pd
 from src.config import load_config
 from src.evaluation.kfold_runner import aggregate_folds, run_kfold
 from src.ood.dod import DODDetector
+from src.reductors.l2_norm import L2NormReductor
 from src.reductors.pca import PCAReductor
 from src.reductors.random_subspace import RandomSubspaceReductor
 from src.reductors.umap import UmapReductor
 from src.training.feature_pipeline import load_embeddings
 
 CACHE_DIR = Path("data/embeddings")
-RESULTS_DIR = Path("data/results")
+CSV_DIR = Path("data/results/csv")
+NPZ_DIR = Path("data/results")
 ARCHITECTURES = ["vit", "cnn"]
 
 
@@ -23,6 +25,7 @@ def build_reductors(cfg: dict, seed: int) -> dict:
     rc = cfg["reductors"]
     return {
         "raw": None,
+        "raw_l2": L2NormReductor(),
         "pca": PCAReductor(n_components=rc["pca"]["n_components"]),
         "random_subspace": RandomSubspaceReductor(
             n_components=rc["random_subspace"]["n_components"], random_state=seed
@@ -51,9 +54,10 @@ def build_detectors(cfg: dict, seed: int) -> dict:
 
 
 def save_results(fold_df: pd.DataFrame, agg_df: pd.DataFrame) -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    NPZ_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    agg_df.to_csv(RESULTS_DIR / f"eval_{timestamp}.csv", index=False)
+    agg_df.to_csv(CSV_DIR / f"eval_{timestamp}.csv", index=False)
 
     group_cols = ["architecture", "space", "detector", "scenario"]
     npz_data = {}
@@ -61,8 +65,8 @@ def save_results(fold_df: pd.DataFrame, agg_df: pd.DataFrame) -> None:
         prefix = "__".join(keys)
         for metric in ("auroc", "aupr", "bal_acc"):
             npz_data[f"{prefix}__{metric}"] = group[metric].to_numpy()
-    np.savez(RESULTS_DIR / f"eval_{timestamp}.npz", **npz_data)
-    print(f"Results saved to data/results/eval_{timestamp}.*")
+    np.savez(NPZ_DIR / f"eval_{timestamp}.npz", **npz_data)
+    print(f"Results saved to data/results/csv/eval_{timestamp}.csv")
 
 
 def main() -> None:

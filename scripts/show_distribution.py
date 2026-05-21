@@ -24,8 +24,10 @@ def main() -> None:
     path_test = load_split("pathmnist", "test", root, image_size=28)
     pneumonia = load_split("pneumoniamnist", "test", root, image_size=28)
 
+    id_total = len(filter_by_classes(path_train, ID_CLASSES))
+    n_splits = 5
     counts = {
-        "ID": len(filter_by_classes(path_train, ID_CLASSES)),
+        "ID (val fold)": id_total // n_splits,
         "Near-OOD": len(filter_by_classes(path_test, NEAR_OOD_CLASSES)),
         "Far-OOD": len(pneumonia),
     }
@@ -39,7 +41,7 @@ def main() -> None:
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()
 
-    out = Path("data/plots/data/distribution.png")
+    out = Path("data/plots/distribution.png")
     plt.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {out}")

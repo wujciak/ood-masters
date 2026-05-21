@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from sklearn.preprocessing import normalize
 from umap import UMAP
@@ -28,7 +30,9 @@ class UmapReductor(BaseReductor):
             min_dist=self.min_dist,
             random_state=self.random_state,
         )
-        self._umap.fit(normalize(features, norm="l2"))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._umap.fit(normalize(features, norm="l2"))
         return self
 
     def transform(self, features: np.ndarray) -> np.ndarray:

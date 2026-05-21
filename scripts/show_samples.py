@@ -52,7 +52,7 @@ def main() -> None:
         axes[row][1].set_title(label, fontsize=9, pad=4)
 
     plt.tight_layout()
-    out = Path("data/plots/data/samples.png")
+    out = Path("data/plots/samples.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
