@@ -20,8 +20,6 @@ def run_kfold(
 
     ood_splits = {name: embeddings[name][0] for name in ("near_ood", "far_ood")}
 
-    n_projectors = len(projectors)
-    n_detectors = len(detectors)
     rows = []
     for fold, (train_idx, val_idx) in enumerate(kf.split(id_feats)):
         print(
@@ -32,7 +30,7 @@ def run_kfold(
 
         for proj_idx, (proj_name, projector) in enumerate(projectors.items()):
             print(
-                f"    [{proj_idx + 1}/{n_projectors}] space={proj_name} - fitting projector..."
+                f"    [{proj_idx + 1}/{len(projectors)}] space={proj_name} - fitting projector..."
             )
             if projector is None:
                 train_proj = train_feats
@@ -47,7 +45,7 @@ def run_kfold(
                 }
 
             for det_idx, (det_name, detector) in enumerate(detectors.items()):
-                print(f"      [{det_idx + 1}/{n_detectors}] detector={det_name}")
+                print(f"      [{det_idx + 1}/{len(detectors)}] detector={det_name}")
                 detector.fit(train_proj)
 
                 t0 = time.perf_counter()

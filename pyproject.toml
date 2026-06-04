@@ -19,6 +19,8 @@ dependencies = [
     "jupyter",
     "ipykernel",
     "black",
+    "weles>=0.6.4",
+    "scikit-posthocs>=0.13.0",
 ]
 
 [tool.black]

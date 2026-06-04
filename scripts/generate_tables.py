@@ -28,25 +28,22 @@ METRICS = ["auroc", "aupr", "bal_acc"]
 METRIC_LABELS = {"auroc": "AUROC", "aupr": "AUPR", "bal_acc": "Bal. Acc."}
 
 
-def fmt(mean: float, std: float) -> str:
-    return f"{mean:.3f} $\\pm$ {std:.3f}"
+def fmt(mean: float, std: float, decimals: int = 3) -> str:
+    return f"{mean:.{decimals}f} $\\pm$ {std:.{decimals}f}"
 
 
 def bold(s: str) -> str:
     return r"\textbf{" + s + "}"
 
 
-def make_table(df: pd.DataFrame, scenario: str, metric: str) -> str:
-    sub = df[df["scenario"] == scenario].copy()
-    col = metric
-    col_std = f"{metric}_std"
-
+def _build_rows(
+    sub: pd.DataFrame,
+    col: str,
+    col_std: str,
+    fmt_fn,
+    lower_is_better: bool = False,
+) -> list[str]:
     lines = []
-    lines.append(r"\begin{tabular}{llcc}")
-    lines.append(r"\toprule")
-    lines.append(f"Space & Distance & ViT & CNN \\\\")
-    lines.append(r"\midrule")
-
     for space in SPACE_ORDER:
         space_rows = sub[sub["space"] == space]
         first = True
@@ -60,31 +57,65 @@ def make_table(df: pd.DataFrame, scenario: str, metric: str) -> str:
             if v.empty or c.empty:
                 continue
             v, c = v.iloc[0], c.iloc[0]
-
-            vit_val = fmt(v[col], v[col_std])
-            cnn_val = fmt(c[col], c[col_std])
-            if v[col] > c[col]:
+            vit_val = fmt_fn(v[col], v[col_std])
+            cnn_val = fmt_fn(c[col], c[col_std])
+            vit_better = v[col] < c[col] if lower_is_better else v[col] > c[col]
+            cnn_better = c[col] < v[col] if lower_is_better else c[col] > v[col]
+            if vit_better:
                 vit_val = bold(vit_val)
-            elif c[col] > v[col]:
+            elif cnn_better:
                 cnn_val = bold(cnn_val)
-
             space_label = SPACE_LABELS[space] if first else ""
             first = False
             lines.append(
                 f"{space_label} & {DETECTOR_LABELS[det]} & {vit_val} & {cnn_val} \\\\"
             )
-
         lines.append(r"\midrule" if space != SPACE_ORDER[-1] else "")
+    return lines
 
-    lines.append(r"\bottomrule")
-    lines.append(r"\end{tabular}")
-    return "\n".join(lines)
+
+def make_table(df: pd.DataFrame, scenario: str, metric: str) -> str:
+    sub = df[df["scenario"] == scenario]
+    rows = _build_rows(sub, metric, f"{metric}_std", fmt)
+    return "\n".join(
+        [
+            r"\begin{tabular}{llcc}",
+            r"\toprule",
+            r"Space & Distance & ViT & CNN \\",
+            r"\midrule",
+            *rows,
+            r"\bottomrule",
+            r"\end{tabular}",
+        ]
+    )
+
+
+def make_timing_table(df: pd.DataFrame) -> str:
+    sub = df[df["scenario"] == "far_ood"]
+    rows = _build_rows(
+        sub,
+        "score_time_us",
+        "score_time_us_std",
+        lambda m, s: fmt(m, s, decimals=1),
+        lower_is_better=True,
+    )
+    return "\n".join(
+        [
+            r"\begin{tabular}{llcc}",
+            r"\toprule",
+            r"Space & Distance & ViT ($\mu$s) & CNN ($\mu$s) \\",
+            r"\midrule",
+            *rows,
+            r"\bottomrule",
+            r"\end{tabular}",
+        ]
+    )
 
 
 def make_bar_chart(
     df: pd.DataFrame, scenario: str, metric: str, save_path: Path
 ) -> None:
-    sub = df[(df["scenario"] == scenario) & (df["detector"] == "mahalanobis")].copy()
+    sub = df[(df["scenario"] == scenario) & (df["detector"] == "mahalanobis")]
     x = np.arange(len(SPACE_ORDER))
     width = 0.35
 
@@ -141,6 +172,11 @@ def main() -> None:
             make_bar_chart(
                 df, scenario, metric, PLOTS_DIR / f"bar_{scenario}_{metric}.png"
             )
+
+    timing = make_timing_table(df)
+    path = TABLES_DIR / "table_timing.tex"
+    path.write_text(timing)
+    print(f"Saved {path}")
 
 
 if __name__ == "__main__":

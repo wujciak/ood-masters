@@ -1,0 +1,31 @@
+\begin{tabular}{llcc}
+\toprule
+Space & Distance & ViT ($\mu$s) & CNN ($\mu$s) \\
+\midrule
+Raw & Mahalanobis & \textbf{1844.6 $\pm$ 16.6} & 15566.4 $\pm$ 385.3 \\
+ & Manhattan & \textbf{5.6 $\pm$ 0.1} & 14.6 $\pm$ 0.4 \\
+ & Euclidean & \textbf{5.4 $\pm$ 0.2} & 14.4 $\pm$ 0.4 \\
+ & Chebyshev & \textbf{5.0 $\pm$ 0.1} & 13.0 $\pm$ 0.6 \\
+\midrule
+Raw L2 & Mahalanobis & \textbf{1844.0 $\pm$ 17.3} & 15653.8 $\pm$ 726.8 \\
+ & Manhattan & \textbf{5.6 $\pm$ 0.1} & 14.9 $\pm$ 0.6 \\
+ & Euclidean & \textbf{5.3 $\pm$ 0.1} & 14.4 $\pm$ 0.7 \\
+ & Chebyshev & \textbf{5.0 $\pm$ 0.1} & 12.9 $\pm$ 0.2 \\
+\midrule
+PCA & Mahalanobis & \textbf{9.4 $\pm$ 0.2} & 9.5 $\pm$ 0.2 \\
+ & Manhattan & 0.3 $\pm$ 0.1 & \textbf{0.3 $\pm$ 0.0} \\
+ & Euclidean & \textbf{0.3 $\pm$ 0.0} & 0.3 $\pm$ 0.0 \\
+ & Chebyshev & \textbf{0.3 $\pm$ 0.0} & 0.3 $\pm$ 0.0 \\
+\midrule
+Rand. Subspace & Mahalanobis & \textbf{9.4 $\pm$ 0.1} & 9.7 $\pm$ 0.3 \\
+ & Manhattan & 0.4 $\pm$ 0.1 & \textbf{0.3 $\pm$ 0.0} \\
+ & Euclidean & \textbf{0.4 $\pm$ 0.0} & 0.5 $\pm$ 0.1 \\
+ & Chebyshev & \textbf{0.4 $\pm$ 0.1} & 0.4 $\pm$ 0.1 \\
+\midrule
+UMAP & Mahalanobis & \textbf{0.2 $\pm$ 0.0} & 0.2 $\pm$ 0.0 \\
+ & Manhattan & \textbf{0.0 $\pm$ 0.0} & 0.0 $\pm$ 0.0 \\
+ & Euclidean & \textbf{0.1 $\pm$ 0.0} & 0.1 $\pm$ 0.0 \\
+ & Chebyshev & \textbf{0.0 $\pm$ 0.0} & 0.1 $\pm$ 0.0 \\
+
+\bottomrule
+\end{tabular}
