@@ -3,17 +3,12 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import yaml
 
+from _constants import load_config
 from src.datasets.medmnist_loader import filter_by_classes, load_split
 
 ID_CLASSES = [0, 2, 3, 4, 5]
 NEAR_OOD_CLASSES = [6, 7, 8]
-
-
-def load_config(path: str = "configs/config.yaml") -> dict:
-    with open(path) as f:
-        return yaml.safe_load(f)
 
 
 def main() -> None:

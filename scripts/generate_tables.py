@@ -1,31 +1,25 @@
+"""Generate LaTeX result tables and bar charts from the latest eval CSV."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from _constants import (
+    ARCH_COLORS,
+    DETECTORS,
+    DETECTOR_LABELS,
+    METRICS,
+    METRIC_LABELS,
+    SPACES,
+    SPACE_LABELS,
+)
+
 TABLES_DIR = Path("data/results/tables")
 PLOTS_DIR = Path("data/plots")
 TABLES_DIR.mkdir(parents=True, exist_ok=True)
 PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-
-SPACE_LABELS = {
-    "raw": "Raw",
-    "raw_l2": "Raw L2",
-    "pca": "PCA",
-    "random_subspace": "Rand. Subspace",
-    "umap": "UMAP",
-}
-DETECTOR_LABELS = {
-    "mahalanobis": "Mahalanobis",
-    "minkowski_l1": "Manhattan",
-    "minkowski_l2": "Euclidean",
-    "minkowski_inf": "Chebyshev",
-}
-SPACE_ORDER = ["raw", "raw_l2", "pca", "random_subspace", "umap"]
-DETECTOR_ORDER = ["mahalanobis", "minkowski_l1", "minkowski_l2", "minkowski_inf"]
-METRICS = ["auroc", "aupr", "bal_acc"]
-METRIC_LABELS = {"auroc": "AUROC", "aupr": "AUPR", "bal_acc": "Bal. Acc."}
 
 
 def fmt(mean: float, std: float, decimals: int = 3) -> str:
@@ -44,10 +38,10 @@ def _build_rows(
     lower_is_better: bool = False,
 ) -> list[str]:
     lines = []
-    for space in SPACE_ORDER:
+    for space in SPACES:
         space_rows = sub[sub["space"] == space]
         first = True
-        for det in DETECTOR_ORDER:
+        for det in DETECTORS:
             v = space_rows[
                 (space_rows["architecture"] == "vit") & (space_rows["detector"] == det)
             ]
@@ -70,7 +64,7 @@ def _build_rows(
             lines.append(
                 f"{space_label} & {DETECTOR_LABELS[det]} & {vit_val} & {cnn_val} \\\\"
             )
-        lines.append(r"\midrule" if space != SPACE_ORDER[-1] else "")
+        lines.append(r"\midrule" if space != SPACES[-1] else "")
     return lines
 
 
@@ -116,18 +110,16 @@ def make_bar_chart(
     df: pd.DataFrame, scenario: str, metric: str, save_path: Path
 ) -> None:
     sub = df[(df["scenario"] == scenario) & (df["detector"] == "mahalanobis")]
-    x = np.arange(len(SPACE_ORDER))
+    x = np.arange(len(SPACES))
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(7, 4))
     for i, arch in enumerate(["vit", "cnn"]):
         arch_sub = sub[sub["architecture"] == arch].set_index("space")
-        means = [
-            arch_sub.loc[s, metric] if s in arch_sub.index else 0 for s in SPACE_ORDER
-        ]
+        means = [arch_sub.loc[s, metric] if s in arch_sub.index else 0 for s in SPACES]
         stds = [
             arch_sub.loc[s, f"{metric}_std"] if s in arch_sub.index else 0
-            for s in SPACE_ORDER
+            for s in SPACES
         ]
         ax.bar(
             x + (i - 0.5) * width,
@@ -136,12 +128,12 @@ def make_bar_chart(
             yerr=stds,
             label=arch.upper(),
             capsize=4,
-            color=["#4878CF", "#D65F5F"][i],
+            color=ARCH_COLORS[arch],
             alpha=0.85,
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels([SPACE_LABELS[s] for s in SPACE_ORDER])
+    ax.set_xticklabels([SPACE_LABELS[s] for s in SPACES])
     ax.set_ylim(0, 1.05)
     ax.set_ylabel(METRIC_LABELS[metric])
     ax.set_title(

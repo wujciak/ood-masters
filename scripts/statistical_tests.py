@@ -1,33 +1,24 @@
+"""Run Wilcoxon (ViT vs CNN) and Friedman + Nemenyi post-hoc tests on eval results."""
+
 from itertools import product
-from pathlib import Path
 
 import numpy as np
 import scikit_posthocs as sp
 from scipy.stats import friedmanchisquare, wilcoxon
 
-NPZ_PATH = sorted(Path("data/results").glob("eval_*.npz"))[-1]
+from _constants import (
+    ARCHS,
+    DETECTORS,
+    DETECTOR_LABELS,
+    METRICS,
+    SCENARIOS,
+    SCENARIO_LABELS,
+    SPACES,
+    SPACE_LABELS,
+    latest_npz,
+)
+
 ALPHA = 0.05
-
-SPACES = ["raw", "raw_l2", "pca", "random_subspace", "umap"]
-DETECTORS = ["mahalanobis", "minkowski_l1", "minkowski_l2", "minkowski_inf"]
-SCENARIOS = ["far_ood", "near_ood"]
-ARCHS = ["vit", "cnn"]
-METRICS = ["auroc", "aupr", "bal_acc"]
-
-SPACE_LABELS = {
-    "raw": "Raw",
-    "raw_l2": "Raw L2",
-    "pca": "PCA",
-    "random_subspace": "Rand. Subspace",
-    "umap": "UMAP",
-}
-DETECTOR_LABELS = {
-    "mahalanobis": "Mahalanobis",
-    "minkowski_l1": "Manhattan",
-    "minkowski_l2": "Euclidean",
-    "minkowski_inf": "Chebyshev",
-}
-SCENARIO_LABELS = {"far_ood": "FAR-OOD", "near_ood": "NEAR-OOD"}
 
 
 def load_all_scores(data: dict) -> dict:
@@ -114,9 +105,7 @@ def friedman_spaces(scores: dict, metric: str) -> None:
         subsection(SCENARIO_LABELS[scen])
         groups = {
             sp: [
-                scores.get(
-                    ("vit" if arch == "vit" else "cnn", sp, det, scen, metric), np.nan
-                )
+                scores.get((arch, sp, det, scen, metric), np.nan)
                 for arch, det in product(ARCHS, DETECTORS)
             ]
             for sp in SPACES
@@ -143,8 +132,9 @@ def friedman_detectors(scores: dict, metric: str) -> None:
 
 
 def main() -> None:
-    print(f"Loading: {NPZ_PATH}  |  alpha={ALPHA}")
-    scores = load_all_scores(np.load(NPZ_PATH))
+    npz_path = latest_npz()
+    print(f"Loading: {npz_path}  |  alpha={ALPHA}")
+    scores = load_all_scores(np.load(npz_path))
 
     for metric in METRICS:
         print(f"\n{'#' * 60}")

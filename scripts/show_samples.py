@@ -1,9 +1,11 @@
+"""Plot sample images for ID, Near-OOD, and Far-OOD splits side by side."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 
+from _constants import load_config
 from src.datasets.medmnist_loader import filter_by_classes, load_split
 
 SPLITS = [
@@ -12,11 +14,6 @@ SPLITS = [
     ("PneumoniaMNIST (Far-OOD)", "pneumoniamnist", "test", None),
 ]
 N_COLS = 3
-
-
-def load_config(path: str = "configs/config.yaml") -> dict:
-    with open(path) as f:
-        return yaml.safe_load(f)
 
 
 def get_images(name: str, split: str, classes: list[int] | None, n: int, root: str):
